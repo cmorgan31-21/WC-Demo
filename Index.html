@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Draft Board — Half-PPR blended ADP</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+ --paper:#FBFBF8;--card:#FFFFFF;--ink:#14161A;--ink2:#3E434C;--ink3:#6B7280;--rule:#DCDFE4;
+ --qb:#C2185B;--rb:#1B8A3C;--wr:#1E5FD8;--te:#C77800;--def:#6B3FB5;--pk:#5B6470;
+ --clock:#14161A;--good:#1B8A3C;--warn:#C77800;--udc:#B45309;--rdc:#1D4ED8;--star:#E0A800;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:Barlow,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.35;-webkit-text-size-adjust:100%}
+h1,h2,.cond{font-family:"Barlow Semi Condensed",Barlow,sans-serif}
+button{font:inherit;cursor:pointer}
+select{font:inherit}
+.wrap{max-width:720px;margin:0 auto;padding:12px 12px 90px}
+
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.top h1{font-size:26px;font-weight:800;margin:0;letter-spacing:-.01em}
+.pickline{font-size:15px;font-weight:600;color:var(--ink2);white-space:nowrap}
+.pickline b{color:var(--ink);font-size:18px}
+.saved{font-size:12px;color:var(--ink3);text-align:right;margin:-6px 0 8px;min-height:14px}
+
+.clock{background:var(--clock);color:#fff;border-radius:14px;padding:14px 14px 12px;margin-bottom:10px}
+.status{display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:15px;opacity:.95;gap:8px;flex-wrap:wrap}
+.status .onclock{background:#FFD54A;color:#14161A;padding:3px 10px;border-radius:20px;font-weight:800}
+.status .away{color:#FFD54A}
+.run{font-size:13px;color:#FFB86B;font-weight:700;margin-top:4px}
+.take{margin-top:8px;display:flex;align-items:center;gap:12px}
+.take .big{flex:1;min-width:0}
+.take .lbl{font-size:13px;opacity:.75;font-weight:600}
+.take .nm{font-family:"Barlow Semi Condensed";font-size:30px;font-weight:800;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.take .why{font-size:14px;opacity:.9;margin-top:3px}
+.take .actions{display:flex;flex-direction:column;gap:6px}
+.take .actions button{border:0;border-radius:10px;padding:9px 14px;font-weight:800;font-size:15px}
+.take .actions .me{background:#FFD54A;color:#14161A}
+.take .actions .gone{background:#2C3038;color:#fff}
+.alts{display:flex;gap:6px;margin-top:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.alts::-webkit-scrollbar{display:none}
+.alt{flex:0 0 auto;background:#262A32;border-radius:10px;padding:7px 10px;min-width:140px}
+.alt .n{font-weight:700;font-size:15px;white-space:nowrap}
+.alt .w{font-size:12px;opacity:.75;margin-top:1px;white-space:nowrap}
+.p{display:inline-block;font-size:11px;font-weight:800;padding:1px 6px;border-radius:5px;margin-right:5px;vertical-align:1px;color:#fff}
+.wait{margin-top:12px;border-top:1px solid #33383F;padding-top:9px;font-size:13.5px}
+.wait .h{font-weight:700;opacity:.8;margin-bottom:4px}
+.wait .l{display:flex;flex-wrap:wrap;gap:4px 10px}
+.wait .l span{white-space:nowrap}
+.empty{padding:6px 0 4px;font-size:15px;opacity:.85}
+
+.roster{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.slot{flex:1 1 auto;min-width:58px;background:var(--card);border:1.5px solid var(--rule);border-radius:10px;padding:6px 8px;text-align:center}
+.slot .k{font-size:12px;font-weight:700;color:var(--ink3)}
+.slot .v{font-family:"Barlow Semi Condensed";font-size:20px;font-weight:800;line-height:1}
+.slot.full{border-color:var(--good);background:#EEF8F0}.slot.full .v{color:var(--good)}
+.slot.need{border-color:var(--warn);background:#FFF6E8}.slot.need .v{color:var(--warn)}
+
+.panel{background:var(--card);border:1.5px solid var(--rule);border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:14px;display:none}
+.panel.show{display:block}
+.panel h2{font-size:18px;margin:0 0 6px;display:flex;justify-content:space-between;align-items:center}
+.panel h2 small{font-size:13px;font-weight:600;color:var(--ink3)}
+.ln{display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px dashed var(--rule)}
+.ln:last-child{border:0}
+.ln .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rhead{font-family:"Barlow Semi Condensed";font-weight:800;font-size:15px;color:var(--ink2);margin:8px 0 2px}
+.rhead.now{color:var(--warn)}
+.rhead .cnt{font-weight:600;color:var(--ink3);font-size:13px}
+.ln select{border:1.5px solid var(--rule);border-radius:7px;padding:3px 4px;font-size:14px;background:#fff}
+.ln .x{border:0;background:#EEF0F3;border-radius:7px;padding:4px 8px;font-weight:800;color:var(--ink2)}
+.panel .hint{color:var(--ink3);font-size:13px}
+
+.bar{position:sticky;top:0;z-index:10;background:var(--paper);padding:6px 0 8px;margin:0 -12px;padding-left:12px;padding-right:12px;border-bottom:1.5px solid var(--rule)}
+.bar .r{display:flex;gap:6px;align-items:center}
+.bar .r+.r{margin-top:6px}
+.bar input[type=search]{flex:1;min-width:0;border:1.5px solid var(--rule);background:var(--card);border-radius:10px;padding:9px 12px;font-size:16px;color:var(--ink)}
+.ico{border:1.5px solid var(--rule);background:var(--card);border-radius:10px;padding:8px 10px;font-weight:700;font-size:14px;color:var(--ink2);white-space:nowrap}
+.ico.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pf{border:1.5px solid var(--rule);background:var(--card);border-radius:20px;padding:6px 0;flex:1;text-align:center;font-weight:800;font-size:13px;color:var(--ink2)}
+.pf.on{color:#fff;border-color:transparent}
+.pf[data-p=ALL].on{background:var(--ink)}.pf[data-p=QB].on{background:var(--qb)}.pf[data-p=RB].on{background:var(--rb)}
+.pf[data-p=WR].on{background:var(--wr)}.pf[data-p=TE].on{background:var(--te)}.pf[data-p=DEF].on{background:var(--def)}.pf[data-p=PK].on{background:var(--pk)}
+
+.board{margin-top:8px}
+.tierhdr{display:flex;align-items:center;gap:8px;margin:14px 0 4px;font-weight:800;font-size:14px;color:var(--ink2)}
+.tierhdr .t{font-family:"Barlow Semi Condensed";font-size:17px;color:var(--ink)}
+.tierhdr .l{flex:1;height:1.5px;background:var(--rule)}
+.tierhdr .left{font-weight:600;color:var(--ink3)}.tierhdr .left.low{color:var(--warn);font-weight:800}
+.divider{display:flex;align-items:center;gap:8px;margin:10px 0 8px;font-weight:800;font-size:13px;color:var(--warn)}
+.divider::before,.divider::after{content:"";flex:1;height:2px;background:var(--warn);opacity:.55}
+.divider span{white-space:nowrap}
+.row{display:flex;align-items:center;gap:6px;background:var(--card);border:1.5px solid var(--rule);border-left-width:6px;border-radius:10px;padding:7px 8px 7px 6px;margin-bottom:5px;min-height:58px}
+.row.QB{border-left-color:var(--qb)}.row.RB{border-left-color:var(--rb)}.row.WR{border-left-color:var(--wr)}
+.row.TE{border-left-color:var(--te)}.row.DEF{border-left-color:var(--def)}.row.PK{border-left-color:var(--pk)}
+.row.gone{opacity:.45;background:#F2F2EF}.row.gone .nm{text-decoration:line-through}
+.row.me{background:#FFF9DD;border-color:#E8C83A}
+.row.danger{background:#FFEBD2;border-color:#F0A94B}
+.row.target:not(.danger):not(.me):not(.gone){border-color:var(--star)}
+.star{border:0;background:transparent;font-size:22px;line-height:1;padding:4px 2px;color:#C9CDD3;flex:0 0 auto}
+.star.on{color:var(--star)}
+.rk{font-family:"Barlow Semi Condensed";font-size:20px;font-weight:800;width:32px;text-align:right;flex:0 0 auto}
+.info{flex:1;min-width:0}
+.nm{font-weight:700;font-size:17px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm .tr{font-size:12px;font-weight:800;color:var(--star);margin-left:6px;vertical-align:2px}
+.meta{font-size:12.5px;color:var(--ink3);margin-top:3px;display:flex;gap:5px 7px;flex-wrap:wrap;align-items:center}
+.pos{font-weight:800;color:#fff;padding:0 6px;border-radius:4px;font-size:11.5px}
+.pos.QB,.p.QB{background:var(--qb)}.pos.RB,.p.RB{background:var(--rb)}.pos.WR,.p.WR{background:var(--wr)}.pos.TE,.p.TE{background:var(--te)}.pos.DEF,.p.DEF{background:var(--def)}.pos.PK,.p.PK{background:var(--pk)}
+.tier{font-weight:800;color:var(--ink2)}
+.src{font-weight:700;padding:0 6px;border-radius:5px;font-size:12px;border:1.5px solid}
+.src.ud{color:var(--udc);border-color:#F1D3A8;background:#FFF7EA}
+.src.rd{color:var(--rdc);border-color:#C3D4F7;background:#EEF3FF}
+.src.hi{font-weight:800}
+.src.hi::before{content:"▲ "}
+.byewarn{color:#B3261E;font-weight:800}
+.risk{color:#B35C00;font-weight:800}
+.act{display:flex;gap:5px;flex:0 0 auto}
+.act button{border:0;border-radius:9px;padding:9px 10px;font-weight:800;font-size:14px;min-width:46px}
+.act .me{background:#FFD54A;color:#14161A}.act .gone{background:#E6E8EC;color:var(--ink2)}.act .undo{background:var(--ink);color:#fff}
+.tag{font-size:12px;font-weight:800;padding:2px 8px;border-radius:6px}
+.tag.me{background:#FFD54A;color:#14161A}.tag.gone{background:#D8DADF;color:var(--ink2)}.tag.avail{background:#E3F3E7;color:var(--good)}
+
+.drawer h2{font-size:18px;margin:0 0 8px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.grid label{font-size:12px;font-weight:700;color:var(--ink3);display:block}
+.grid input{width:100%;border:1.5px solid var(--rule);border-radius:8px;padding:7px;font-size:16px;text-align:center}
+.sl{display:flex;align-items:center;gap:10px;margin-top:10px}
+.sl input[type=range]{flex:1;accent-color:var(--ink)}
+.sl b{font-family:"Barlow Semi Condensed";font-size:16px;white-space:nowrap}
+.sl b .u{color:var(--udc)}.sl b .r{color:var(--rdc)}
+.btnrow{display:flex;gap:8px;margin-top:12px}
+.btnrow button{flex:1;border:1.5px solid var(--rule);background:#fff;border-radius:9px;padding:8px 6px;font-weight:700;color:var(--ink2);font-size:14px}
+.btnrow button.danger{border-color:#E5B4B4;background:#FFF4F4;color:#9B1C1C}
+.legend{font-size:13px;color:var(--ink3);margin-top:16px;line-height:1.55}
+.legend b{color:var(--ink2)}
+</style></head><body><div class="wrap">
+
+<div class="top"><h1>Draft board</h1><div class="pickline" id="pickline"></div></div>
+<div class="saved" id="saved"></div>
+
+<div class="clock" id="clock"></div>
+<div class="roster" id="roster"></div>
+
+<div class="panel" id="myteam"></div>
+<div class="panel" id="targets"></div>
+<div class="panel drawer" id="drawer">
+  <h2>League setup</h2>
+  <div class="grid">
+    <div><label>Teams</label><input id="s_teams" type="number" min="4" max="20" value="12"></div>
+    <div><label>My slot</label><input id="s_slot" type="number" min="1" max="20" value="10"></div>
+    <div><label>Bench</label><input id="s_bench" type="number" min="0" max="12" value="6"></div>
+    <div><label>Rounds</label><input id="s_rounds" type="number" disabled></div>
+  </div>
+  <div class="hint" style="margin:8px 0 4px">Starters</div>
+  <div class="grid">
+    <div><label>QB</label><input id="s_QB" type="number" min="0" max="3" value="1"></div>
+    <div><label>RB</label><input id="s_RB" type="number" min="0" max="4" value="2"></div>
+    <div><label>WR</label><input id="s_WR" type="number" min="0" max="4" value="0"></div>
+    <div><label>TE</label><input id="s_TE" type="number" min="0" max="2" value="0"></div>
+    <div><label>WR/TE</label><input id="s_WRTE" type="number" min="0" max="4" value="3"></div>
+    <div><label>Flex</label><input id="s_FLEX" type="number" min="0" max="3" value="1"></div>
+    <div><label>DST</label><input id="s_DEF" type="number" min="0" max="1" value="1"></div>
+    <div><label>K</label><input id="s_PK" type="number" min="0" max="1" value="1"></div>
+  </div>
+  <div class="sl"><span style="font-weight:700;color:var(--ink3)">Rank blend</span><input id="w" type="range" min="0" max="100" value="40"><b><span class="u" id="wu">40%</span> Underdog / <span class="r" id="wr">60%</span> Redraft</b></div>
+  <div class="hint">Rank is a weighted average of the two source ranks on each row. The source numbers never move — only the blend does.</div>
+  <div class="btnrow">
+    <button id="clearpicks" class="danger">Clear picks</button>
+    <button id="cleartargets">Clear targets</button>
+  </div>
+</div>
+
+<div class="bar">
+  <div class="r">
+    <input id="q" type="search" placeholder="Search a player" autocomplete="off"/>
+    <button class="ico" id="undo" title="Undo last pick">Undo</button>
+    <button class="ico" id="gear">Settings</button>
+  </div>
+  <div class="r">
+    <button class="ico" id="tgl_targets">★ Targets</button>
+    <button class="ico" id="tgl_team">My team</button>
+    <button class="ico" id="tgl_drafted">Show drafted</button>
+  </div>
+  <div class="r" id="filters">
+    <button class="pf on" data-p="ALL">All</button><button class="pf" data-p="QB">QB</button>
+    <button class="pf" data-p="RB">RB</button><button class="pf" data-p="WR">WR</button>
+    <button class="pf" data-p="TE">TE</button><button class="pf" data-p="DEF">DST</button><button class="pf" data-p="PK">K</button>
+  </div>
+</div>
+
+<div class="board" id="board"></div>
+
+<div class="legend">
+<b>Rank</b> (the big number) is your follow order: a weighted average of the two chips on each row. <b>Underdog #34</b> is where best-ball drafters take him; <b>Redraft #41</b> is where managed half-PPR leagues take him. The ▲ marks whichever source has him higher. The chips never move — the Rank slides between them as you change the blend.<br>
+When Underdog has him well higher, that's best-ball hype (boom/bust) — don't reach. When Redraft has him higher, he's a steady weekly-floor player and a good value for your league.<br>
+<b>Orange rows</b> are the players most likely gone before your next pick — the board counts how many picks other teams make before you're up and flags that many from the top. <b>★ Targets</b> get a boost in "Take now" and appear in the Targets panel by round. <b>Bye ×3</b> means three of your guys share that bye. Picks, targets, and settings are saved on this device.
+</div>
+
+</div>
+<script>
+const DATA=[{"name": "Jahmyr Gibbs", "pos": "RB", "team": "DET", "bye": 6, "ffc": 1, "ud": 1}, {"name": "Bijan Robinson", "pos": "RB", "team": "ATL", "bye": 11, "ffc": 2, "ud": 2}, {"name": "Puka Nacua", "pos": "WR", "team": "LAR", "bye": 11, "ffc": 3, "ud": 4}, {"name": "Ja'Marr Chase", "pos": "WR", "team": "CIN", "bye": 6, "ffc": 4, "ud": 3}, {"name": "Jaxon Smith-Njigba", "pos": "WR", "team": "SEA", "bye": 11, "ffc": 5, "ud": 5}, {"name": "Jonathan Taylor", "pos": "RB", "team": "IND", "bye": 13, "ffc": 6, "ud": 8}, {"name": "Christian McCaffrey", "pos": "RB", "team": "SF", "bye": 8, "ffc": 7, "ud": 6}, {"name": "Amon-Ra St. Brown", "pos": "WR", "team": "DET", "bye": 6, "ffc": 8, "ud": 7}, {"name": "James Cook III", "pos": "RB", "team": "BUF", "bye": 7, "ffc": 9, "ud": 9}, {"name": "Derrick Henry", "pos": "RB", "team": "BAL", "bye": 13, "ffc": 10, "ud": 17}, {"name": "De'Von Achane", "pos": "RB", "team": "MIA", "bye": 6, "ffc": 11, "ud": 16}, {"name": "CeeDee Lamb", "pos": "WR", "team": "DAL", "bye": 14, "ffc": 12, "ud": 10}, {"name": "Justin Jefferson", "pos": "WR", "team": "MIN", "bye": 6, "ffc": 13, "ud": 11}, {"name": "Chase Brown", "pos": "RB", "team": "CIN", "bye": 6, "ffc": 14, "ud": 14}, {"name": "Drake London", "pos": "WR", "team": "ATL", "bye": 11, "ffc": 15, "ud": 23}, {"name": "Saquon Barkley", "pos": "RB", "team": "PHI", "bye": 10, "ffc": 16, "ud": 12}, {"name": "A.J. Brown", "pos": "WR", "team": "NE", "bye": 11, "ffc": 17, "ud": 19}, {"name": "Rashee Rice", "pos": "WR", "team": "KC", "bye": 5, "ffc": 18, "ud": 27}, {"name": "George Pickens", "pos": "WR", "team": "DAL", "bye": 14, "ffc": 19, "ud": 24}, {"name": "Kenneth Walker", "pos": "RB", "team": "KC", "bye": 5, "ffc": 20, "ud": 13}, {"name": "Nico Collins", "pos": "WR", "team": "HOU", "bye": 8, "ffc": 21, "ud": 21}, {"name": "Omarion Hampton", "pos": "RB", "team": "LAC", "bye": 7, "ffc": 22, "ud": 18}, {"name": "Ashton Jeanty", "pos": "RB", "team": "LV", "bye": 13, "ffc": 23, "ud": 15}, {"name": "Zay Flowers", "pos": "WR", "team": "BAL", "bye": 13, "ffc": 24, "ud": 31}, {"name": "Chris Olave", "pos": "WR", "team": "NO", "bye": 8, "ffc": 25, "ud": 25}, {"name": "Malik Nabers", "pos": "WR", "team": "NYG", "bye": 8, "ffc": 26, "ud": 22}, {"name": "Kyren Williams", "pos": "RB", "team": "LAR", "bye": 11, "ffc": 27, "ud": 29}, {"name": "Jeremiyah Love", "pos": "RB", "team": "ARI", "bye": 14, "ffc": 28, "ud": 30}, {"name": "Garrett Wilson", "pos": "WR", "team": "NYJ", "bye": 13, "ffc": 29, "ud": 39}, {"name": "Javonte Williams", "pos": "RB", "team": "DAL", "bye": 14, "ffc": 30, "ud": 32}, {"name": "Josh Allen", "pos": "QB", "team": "BUF", "bye": 7, "ffc": 31, "ud": 37}, {"name": "DeVonta Smith", "pos": "WR", "team": "PHI", "bye": 10, "ffc": 32, "ud": 26}, {"name": "Tetairoa McMillan", "pos": "WR", "team": "CAR", "bye": 5, "ffc": 33, "ud": 41}, {"name": "Breece Hall", "pos": "RB", "team": "NYJ", "bye": 13, "ffc": 34, "ud": 33}, {"name": "Tee Higgins", "pos": "WR", "team": "CIN", "bye": 6, "ffc": 35, "ud": 35}, {"name": "Emeka Egbuka", "pos": "WR", "team": "TB", "bye": 10, "ffc": 36, "ud": 38}, {"name": "Travis Etienne Jr.", "pos": "RB", "team": "NO", "bye": 8, "ffc": 37, "ud": 40}, {"name": "Davante Adams", "pos": "WR", "team": "LAR", "bye": 11, "ffc": 38, "ud": 52}, {"name": "Jameson Williams", "pos": "WR", "team": "DET", "bye": 6, "ffc": 39, "ud": 47}, {"name": "Cam Skattebo", "pos": "RB", "team": "NYG", "bye": 8, "ffc": 40, "ud": 46}, {"name": "Trey McBride", "pos": "TE", "team": "ARI", "bye": 14, "ffc": 41, "ud": 28}, {"name": "Brock Bowers", "pos": "TE", "team": "LV", "bye": 13, "ffc": 42, "ud": 20}, {"name": "Ladd McConkey", "pos": "WR", "team": "LAC", "bye": 7, "ffc": 43, "ud": 34}, {"name": "D'Andre Swift", "pos": "RB", "team": "CHI", "bye": 10, "ffc": 44, "ud": 42}, {"name": "Jaylen Waddle", "pos": "WR", "team": "DEN", "bye": 10, "ffc": 45, "ud": 36}, {"name": "Terry McLaurin", "pos": "WR", "team": "WAS", "bye": 7, "ffc": 46, "ud": 49}, {"name": "Bucky Irving", "pos": "RB", "team": "TB", "bye": 10, "ffc": 47, "ud": 51}, {"name": "DJ Moore", "pos": "WR", "team": "BUF", "bye": 7, "ffc": 48, "ud": 50}, {"name": "Rome Odunze", "pos": "WR", "team": "CHI", "bye": 10, "ffc": 49, "ud": 58}, {"name": "Quinshon Judkins", "pos": "RB", "team": "CLE", "bye": 11, "ffc": 50, "ud": 55}, {"name": "Drake Maye", "pos": "QB", "team": "NE", "bye": 11, "ffc": 51, "ud": 67}, {"name": "Bhayshul Tuten", "pos": "RB", "team": "JAX", "bye": 7, "ffc": 52, "ud": 48}, {"name": "Luther Burden III", "pos": "WR", "team": "CHI", "bye": 10, "ffc": 53, "ud": 44}, {"name": "Christian Watson", "pos": "WR", "team": "GB", "bye": 11, "ffc": 54, "ud": 57}, {"name": "Joe Burrow", "pos": "QB", "team": "CIN", "bye": 6, "ffc": 55, "ud": 68}, {"name": "Mike Evans", "pos": "WR", "team": "SF", "bye": 8, "ffc": 56, "ud": 54}, {"name": "David Montgomery", "pos": "RB", "team": "HOU", "bye": 8, "ffc": 57, "ud": 45}, {"name": "Lamar Jackson", "pos": "QB", "team": "BAL", "bye": 13, "ffc": 58, "ud": 60}, {"name": "Colston Loveland", "pos": "TE", "team": "CHI", "bye": 10, "ffc": 59, "ud": 43}, {"name": "Courtland Sutton", "pos": "WR", "team": "DEN", "bye": 10, "ffc": 60, "ud": 82}, {"name": "Alec Pierce", "pos": "WR", "team": "IND", "bye": 13, "ffc": 61, "ud": 93}, {"name": "Rhamondre Stevenson", "pos": "RB", "team": "NE", "bye": 11, "ffc": 62, "ud": 65}, {"name": "Jaylen Warren", "pos": "RB", "team": "PIT", "bye": 9, "ffc": 63, "ud": 69}, {"name": "Parker Washington", "pos": "WR", "team": "JAX", "bye": 7, "ffc": 64, "ud": 53}, {"name": "DK Metcalf", "pos": "WR", "team": "PIT", "bye": 9, "ffc": 65, "ud": 73}, {"name": "TreVeyon Henderson", "pos": "RB", "team": "NE", "bye": 11, "ffc": 66, "ud": 61}, {"name": "Marvin Harrison Jr.", "pos": "WR", "team": "ARI", "bye": 14, "ffc": 67, "ud": 64}, {"name": "Dak Prescott", "pos": "QB", "team": "DAL", "bye": 14, "ffc": 68, "ud": 81}, {"name": "Jadarian Price", "pos": "RB", "team": "SEA", "bye": 11, "ffc": 69, "ud": 59}, {"name": "Tony Pollard", "pos": "RB", "team": "TEN", "bye": 9, "ffc": 70, "ud": 78}, {"name": "Tyler Warren", "pos": "TE", "team": "IND", "bye": 13, "ffc": 71, "ud": 62}, {"name": "Brian Thomas Jr.", "pos": "WR", "team": "JAX", "bye": 7, "ffc": 72, "ud": 66}, {"name": "Michael Wilson", "pos": "WR", "team": "ARI", "bye": 14, "ffc": 73, "ud": 90}, {"name": "Jayden Daniels", "pos": "QB", "team": "WAS", "bye": 7, "ffc": 74, "ud": 71}, {"name": "Rico Dowdle", "pos": "RB", "team": "PIT", "bye": 9, "ffc": 75, "ud": 79}, {"name": "Josh Jacobs", "pos": "RB", "team": "GB", "bye": 11, "ffc": 76, "ud": 56}, {"name": "Matthew Stafford", "pos": "QB", "team": "LAR", "bye": 11, "ffc": 77, "ud": 115}, {"name": "Carnell Tate", "pos": "WR", "team": "TEN", "bye": 9, "ffc": 78, "ud": 63}, {"name": "Harold Fannin Jr.", "pos": "TE", "team": "CLE", "bye": 11, "ffc": 79, "ud": 107}, {"name": "Chris Godwin Jr.", "pos": "WR", "team": "TB", "bye": 10, "ffc": 80, "ud": 80}, {"name": "J.K. Dobbins", "pos": "RB", "team": "DEN", "bye": 10, "ffc": 81, "ud": 96}, {"name": "Jalen Hurts", "pos": "QB", "team": "PHI", "bye": 10, "ffc": 82, "ud": 72}, {"name": "Michael Pittman Jr.", "pos": "WR", "team": "PIT", "bye": 9, "ffc": 83, "ud": 103}, {"name": "Seattle Defense", "pos": "DEF", "team": "SEA", "bye": 11, "ffc": 84, "ud": null}, {"name": "Quentin Johnston", "pos": "WR", "team": "LAC", "bye": 7, "ffc": 85, "ud": 70}, {"name": "Jayden Reed", "pos": "WR", "team": "GB", "bye": 11, "ffc": 86, "ud": 77}, {"name": "Brock Purdy", "pos": "QB", "team": "SF", "bye": 8, "ffc": 87, "ud": 104}, {"name": "Jakobi Meyers", "pos": "WR", "team": "JAX", "bye": 7, "ffc": 88, "ud": 123}, {"name": "Chuba Hubbard", "pos": "RB", "team": "CAR", "bye": 5, "ffc": 89, "ud": 102}, {"name": "Caleb Williams", "pos": "QB", "team": "CHI", "bye": 10, "ffc": 90, "ud": 74}, {"name": "George Kittle", "pos": "TE", "team": "SF", "bye": 8, "ffc": 91, "ud": 112}, {"name": "Jordan Addison", "pos": "WR", "team": "MIN", "bye": 6, "ffc": 92, "ud": 87}, {"name": "Jonathon Brooks", "pos": "RB", "team": "CAR", "bye": 5, "ffc": 93, "ud": 75}, {"name": "Denver Defense", "pos": "DEF", "team": "DEN", "bye": 10, "ffc": 94, "ud": null}, {"name": "Trevor Lawrence", "pos": "QB", "team": "JAX", "bye": 7, "ffc": 95, "ud": 88}, {"name": "Tucker Kraft", "pos": "TE", "team": "GB", "bye": 11, "ffc": 96, "ud": 76}, {"name": "Josh Downs", "pos": "WR", "team": "IND", "bye": 13, "ffc": 97, "ud": 86}, {"name": "Wan'Dale Robinson", "pos": "WR", "team": "TEN", "bye": 9, "ffc": 98, "ud": 119}, {"name": "Kyle Pitts Sr.", "pos": "TE", "team": "ATL", "bye": 11, "ffc": 99, "ud": 101}, {"name": "Stefon Diggs", "pos": "WR", "team": "WAS", "bye": 7, "ffc": 100, "ud": 94}, {"name": "Houston Defense", "pos": "DEF", "team": "HOU", "bye": 8, "ffc": 101, "ud": null}, {"name": "Xavier Worthy", "pos": "WR", "team": "KC", "bye": 5, "ffc": 102, "ud": 108}, {"name": "Romeo Doubs", "pos": "WR", "team": "NE", "bye": 11, "ffc": 103, "ud": 118}, {"name": "Matthew Golden", "pos": "WR", "team": "GB", "bye": 11, "ffc": 104, "ud": 95}, {"name": "Kenny Gainwell", "pos": "RB", "team": "TB", "bye": 10, "ffc": 105, "ud": 110}, {"name": "Jacory Croskey-Merritt", "pos": "RB", "team": "WAS", "bye": 7, "ffc": 106, "ud": 98}, {"name": "Jared Goff", "pos": "QB", "team": "DET", "bye": 6, "ffc": 107, "ud": 113}, {"name": "LA Rams Defense", "pos": "DEF", "team": "LAR", "bye": 11, "ffc": 108, "ud": null}, {"name": "Patrick Mahomes", "pos": "QB", "team": "KC", "bye": 5, "ffc": 109, "ud": 99}, {"name": "Aaron Jones Sr.", "pos": "RB", "team": "MIN", "bye": 6, "ffc": 110, "ud": 127}, {"name": "Justin Herbert", "pos": "QB", "team": "LAC", "bye": 7, "ffc": 111, "ud": 84}, {"name": "Khalil Shakir", "pos": "WR", "team": "BUF", "bye": 7, "ffc": 112, "ud": 132}, {"name": "Kyle Monangai", "pos": "RB", "team": "CHI", "bye": 10, "ffc": 113, "ud": 114}, {"name": "RJ Harvey", "pos": "RB", "team": "DEN", "bye": 10, "ffc": 114, "ud": 89}, {"name": "Sam LaPorta", "pos": "TE", "team": "DET", "bye": 6, "ffc": 115, "ud": 91}, {"name": "Deebo Samuel Sr.", "pos": "WR", "team": "SF", "bye": 8, "ffc": 116, "ud": 130}, {"name": "Minnesota Defense", "pos": "DEF", "team": "MIN", "bye": 6, "ffc": 117, "ud": null}, {"name": "Jordan Mason", "pos": "RB", "team": "MIN", "bye": 6, "ffc": 118, "ud": 92}, {"name": "Bo Nix", "pos": "QB", "team": "DEN", "bye": 10, "ffc": 119, "ud": 105}, {"name": "KC Concepcion", "pos": "WR", "team": "CLE", "bye": 11, "ffc": 120, "ud": 106}, {"name": "MarShawn Lloyd", "pos": "RB", "team": "GB", "bye": 11, "ffc": 121, "ud": 97}, {"name": "Jalen Coker", "pos": "WR", "team": "CAR", "bye": 5, "ffc": 122, "ud": 129}, {"name": "Blake Corum", "pos": "RB", "team": "LAR", "bye": 11, "ffc": 123, "ud": 85}, {"name": "Rashid Shaheed", "pos": "WR", "team": "SEA", "bye": 11, "ffc": 124, "ud": 136}, {"name": "Dallas Goedert", "pos": "TE", "team": "PHI", "bye": 10, "ffc": 125, "ud": 131}, {"name": "New England Defense", "pos": "DEF", "team": "NE", "bye": 11, "ffc": 126, "ud": null}, {"name": "Jaxson Dart", "pos": "QB", "team": "NYG", "bye": 8, "ffc": 127, "ud": 109}, {"name": "De'Zhaun Stribling", "pos": "WR", "team": "SF", "bye": 8, "ffc": 128, "ud": 100}, {"name": "Jerry Jeudy", "pos": "WR", "team": "CLE", "bye": 11, "ffc": 129, "ud": 202}, {"name": "Philadelphia Defense", "pos": "DEF", "team": "PHI", "bye": 10, "ffc": 130, "ud": null}, {"name": "Rachaad White", "pos": "RB", "team": "WAS", "bye": 7, "ffc": 131, "ud": 121}, {"name": "Tre Tucker", "pos": "WR", "team": "LV", "bye": 13, "ffc": 132, "ud": 146}, {"name": "Brandon Aubrey", "pos": "PK", "team": "DAL", "bye": 14, "ffc": 133, "ud": null}, {"name": "Makai Lemon", "pos": "WR", "team": "PHI", "bye": 10, "ffc": 134, "ud": 83}, {"name": "Detroit Defense", "pos": "DEF", "team": "DET", "bye": 6, "ffc": 135, "ud": null}, {"name": "Jalen McMillan", "pos": "WR", "team": "TB", "bye": 10, "ffc": 136, "ud": 161}, {"name": "Travis Kelce", "pos": "TE", "team": "KC", "bye": 5, "ffc": 137, "ud": 125}, {"name": "Kyler Murray", "pos": "QB", "team": "MIN", "bye": 6, "ffc": 138, "ud": 116}, {"name": "Isaiah Likely", "pos": "TE", "team": "NYG", "bye": 8, "ffc": 139, "ud": 126}, {"name": "Mark Andrews", "pos": "TE", "team": "BAL", "bye": 13, "ffc": 140, "ud": 138}, {"name": "Baker Mayfield", "pos": "QB", "team": "TB", "bye": 10, "ffc": 141, "ud": 124}, {"name": "Woody Marks", "pos": "RB", "team": "HOU", "bye": 8, "ffc": 142, "ud": 137}, {"name": "Tyjae Spears", "pos": "RB", "team": "TEN", "bye": 9, "ffc": 143, "ud": 153}, {"name": "Jason Myers", "pos": "PK", "team": "SEA", "bye": 11, "ffc": 144, "ud": null}, {"name": "Ka'imi Fairbairn", "pos": "PK", "team": "HOU", "bye": 8, "ffc": 145, "ud": null}, {"name": "Denzel Boston", "pos": "WR", "team": "CLE", "bye": 11, "ffc": 146, "ud": 147}, {"name": "Cameron Dicker", "pos": "PK", "team": "LAC", "bye": 7, "ffc": 147, "ud": null}, {"name": "Zach Charbonnet", "pos": "RB", "team": "SEA", "bye": 11, "ffc": 148, "ud": 166}, {"name": "Keenan Allen", "pos": "WR", "team": "IND", "bye": 13, "ffc": 149, "ud": 154}, {"name": "Rashod Bateman", "pos": "WR", "team": "BAL", "bye": 13, "ffc": 150, "ud": 212}];
+const KEY="draftboard:v3";
+const ST={W:0.4,POS:"ALL",Q:"",showD:false,panel:null,teams:12,slot:10,bench:6,
+  st:{QB:1,RB:2,WR:0,TE:0,WRTE:3,FLEX:1,DEF:1,PK:1}};
+let marks=[];            // [{n,a}] in draft order, a='me'|'gone'
+let targets={};          // name -> round
+const POSNAME={DEF:"DST",PK:"K"}; const pn=p=>POSNAME[p]||p;
+
+/* ---------- persistence ---------- */
+const store={
+  async get(){ try{ if(window.storage){const r=await window.storage.get(KEY,false);return r?JSON.parse(r.value):null;}
+                     const v=localStorage.getItem(KEY);return v?JSON.parse(v):null; }catch(e){return null;} },
+  async set(v){ try{ if(window.storage){await window.storage.set(KEY,JSON.stringify(v),false);}
+                     else localStorage.setItem(KEY,JSON.stringify(v)); flashSaved(); }catch(e){ document.getElementById("saved").textContent="Not saved — storage unavailable"; } }
+};
+let saveT=null;
+function save(){ clearTimeout(saveT); saveT=setTimeout(()=>store.set({marks,targets,W:ST.W,teams:ST.teams,slot:ST.slot,bench:ST.bench,st:ST.st}),150); }
+function flashSaved(){ const e=document.getElementById("saved"); e.textContent="Saved"; setTimeout(()=>{if(e.textContent==="Saved")e.textContent="";},1200); }
+async function load(){
+  const d=await store.get(); if(!d) return;
+  marks=Array.isArray(d.marks)?d.marks:[]; targets=d.targets||{};
+  if(typeof d.W==="number")ST.W=d.W; if(d.teams)ST.teams=d.teams; if(d.slot)ST.slot=d.slot; if(typeof d.bench==="number")ST.bench=d.bench;
+  if(d.st)Object.assign(ST.st,d.st);
+  document.getElementById("w").value=Math.round(ST.W*100);
+  document.getElementById("wu").textContent=Math.round(ST.W*100)+"%"; document.getElementById("wr").textContent=(100-Math.round(ST.W*100))+"%";
+  document.getElementById("s_teams").value=ST.teams; document.getElementById("s_slot").value=ST.slot; document.getElementById("s_bench").value=ST.bench;
+  for(const k in ST.st) document.getElementById("s_"+k).value=ST.st[k];
+}
+const markMap=()=>new Map(marks.map(m=>[m.n,m.a]));
+
+/* ---------- model ---------- */
+function build(){
+  const rows=DATA.map(r=>({...r,b:r.ud==null?r.ffc:ST.W*r.ud+(1-ST.W)*r.ffc})).sort((a,b)=>a.b-b.b);
+  rows.forEach((r,i)=>r.rank=i+1);
+  for(const pos of ["QB","RB","WR","TE","DEF","PK"]){
+    const ps=rows.filter(r=>r.pos===pos), maxsize={QB:4,TE:4,DEF:5,PK:5}[pos]||7;
+    let t=1,cnt=0,prev=null;
+    for(const r of ps){
+      if(prev!=null){const gap=r.b-prev,thr=Math.max(3.5,0.10*prev);
+        if((gap>thr&&cnt>=2)||(gap>2*thr&&cnt>=1)||cnt>=maxsize){t++;cnt=0;}}
+      r.tier=t;cnt++;prev=r.b;
+    }
+  }
+  return rows;
+}
+function totalRounds(){const s=ST.st;return s.QB+s.RB+s.WR+s.TE+s.WRTE+s.FLEX+s.DEF+s.PK+ST.bench;}
+function myPickNumbers(){ if(!ST.slot)return[]; const T=ST.teams,o=[]; for(let r=1;r<=totalRounds();r++)o.push((r-1)*T+(r%2===1?ST.slot:(T-ST.slot+1))); return o; }
+function draftState(){
+  const made=marks.length, cur=made+1, round=Math.floor(made/ST.teams)+1;
+  const mine=myPickNumbers(), next=mine.find(p=>p>=cur)||null, nextAfter=mine.find(p=>p>cur)||null;
+  const away=next?next-cur:null; let gap=null,horizon=null;
+  if(next!=null){ if(away>0){gap=away;horizon=next;} else if(nextAfter){gap=nextAfter-cur-1;horizon=nextAfter;} else {gap=0;} }
+  let run=null; const last=marks.slice(-6);
+  if(last.length>=4){ const byPos={}; const idx=new Map(DATA.map(r=>[r.name,r.pos]));
+    last.forEach(m=>{const p=idx.get(m.n);if(p)byPos[p]=(byPos[p]||0)+1;});
+    for(const p in byPos){ if(byPos[p]>=4&&(p==="RB"||p==="WR"||p==="QB"||p==="TE")) run={pos:p,n:byPos[p],of:last.length}; } }
+  return {made,cur,round,next,nextAfter,away,gap,horizon,run};
+}
+function rosterCounts(rows,mm){
+  const have={QB:0,RB:0,WR:0,TE:0,DEF:0,PK:0}, byes={};
+  rows.forEach(r=>{ if(mm.get(r.name)==="me"){have[r.pos]++; if(r.pos!=="DEF"&&r.pos!=="PK")byes[r.bye]=(byes[r.bye]||0)+1;} });
+  const s=ST.st, wrDed=Math.min(have.WR,s.WR), teDed=Math.min(have.TE,s.TE);
+  const wrtePool=(have.WR-wrDed)+(have.TE-teDed), wrteUsed=Math.min(s.WRTE,wrtePool);
+  const flexPool=(wrtePool-wrteUsed)+Math.max(0,have.RB-s.RB), flexUsed=Math.min(s.FLEX,flexPool);
+  const benchUsed=(flexPool-flexUsed)+Math.max(0,have.QB-s.QB)+Math.max(0,have.DEF-s.DEF)+Math.max(0,have.PK-s.PK);
+  return {have,wrDed,teDed,wrteUsed,flexUsed,benchUsed,byes};
+}
+function dangerSet(rows,ds,mm){ const set=new Set(); if(!ds.gap)return set; rows.filter(r=>!mm.has(r.name)).slice(0,ds.gap).forEach(r=>set.add(r.name)); return set; }
+function ifYouWait(rows,ds,mm,danger){
+  if(!ds.gap) return null; const out={};
+  rows.forEach(r=>{ if(mm.has(r.name)||danger.has(r.name)) return; if(!out[r.pos]&&r.pos!=="DEF"&&r.pos!=="PK") out[r.pos]=r; });
+  return out;
+}
+function recommend(rows,ds,rc,danger,mm){
+  const s=ST.st,h=rc.have, avail=rows.filter(r=>!mm.has(r.name)), roundsLeft=totalRounds()-ds.round;
+  const remain={},bestTier={};
+  avail.forEach(r=>{const k=r.pos+"|"+r.tier;remain[k]=(remain[k]||0)+1;if(bestTier[r.pos]==null||r.tier<bestTier[r.pos])bestTier[r.pos]=r.tier;});
+  const flexOpen=rc.flexUsed<s.FLEX, wrteOpen=rc.wrteUsed<s.WRTE;
+  return avail.map(r=>{
+    let m=1,why=[],val=Math.max(0,185-r.b),need=false;
+    if(r.pos==="DEF"||r.pos==="PK"){ need=h[r.pos]<s[r.pos]; if(roundsLeft>2)m=0.04; else if(need){m=1.3;why.push("Fill "+pn(r.pos)+" now");} else m=0.04; }
+    else if(r.pos==="QB"){ need=h.QB<s.QB; if(need){m=1.0;why.push("Fills QB");} else {m=0.22;why.push("Backup QB");} }
+    else if(r.pos==="RB"){ need=h.RB<s.RB; if(need){m=1.06;why.push("Fills RB"+(h.RB+1));} else if(flexOpen){m=0.92;why.push("Flex");} else {m=0.74;why.push("RB depth");} }
+    else { const ded=r.pos==="WR"?h.WR<s.WR:h.TE<s.TE;
+      if(ded){need=true;m=1.06;why.push("Fills "+r.pos);}
+      else if(wrteOpen){need=true;m=r.pos==="WR"?1.04:0.98;why.push("WR/TE slot "+(rc.wrteUsed+1)+" of "+s.WRTE);}
+      else if(flexOpen){m=r.pos==="WR"?0.92:0.6;why.push("Flex");} else {m=r.pos==="WR"?0.74:0.3;why.push(r.pos+" depth");} }
+    if(need&&ds.round>=6&&r.pos!=="DEF"&&r.pos!=="PK")m+=0.15;
+    let bonus=0; const left=remain[r.pos+"|"+r.tier];
+    if(targets[r.name]){bonus+=8;why.unshift("★ Target R"+targets[r.name]);}
+    if(left<=2&&r.tier===bestTier[r.pos]&&r.pos!=="DEF"&&r.pos!=="PK"){bonus+=12;why.push(left===1?"Last in tier "+r.tier:"Tier "+r.tier+" almost gone");}
+    if(danger.has(r.name)&&ds.horizon){bonus+=6;why.push("Gone by #"+ds.horizon);}
+    if(rc.byes[r.bye]>=2&&r.pos!=="DEF"&&r.pos!=="PK"){bonus-=4;why.push("Bye "+r.bye+" ×"+(rc.byes[r.bye]+1));}
+    return {r,score:val*m+bonus,why:why.slice(0,2).join(" · ")||"Best available"};
+  }).sort((a,b)=>b.score-a.score).slice(0,5);
+}
+
+/* ---------- render ---------- */
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+const posTag=p=>`<span class="pos ${p}">${pn(p)}</span>`;
+function srcChips(r){
+  if(r.ud==null) return `<span class="src rd">Redraft #${r.ffc}</span>`;
+  const d=r.ffc-r.ud; const hu=d>=6?" hi":"", hr=d<=-6?" hi":"";
+  return `<span class="src ud${hu}">Underdog #${r.ud}</span><span class="src rd${hr}">Redraft #${r.ffc}</span>`;
+}
+function render(){
+  const mm=markMap(), rows=build(), ds=draftState(), rc=rosterCounts(rows,mm), danger=dangerSet(rows,ds,mm),
+        recs=recommend(rows,ds,rc,danger,mm), wait=ifYouWait(rows,ds,mm,danger);
+  document.getElementById("s_rounds").value=totalRounds();
+  document.getElementById("pickline").innerHTML=`Pick <b>${ds.cur}</b> &nbsp;Rd <b>${ds.round}</b>`;
+
+  let L=ST.slot?(ds.away===0?`<span class="onclock">You're on the clock</span>`:ds.next?`<span>Your next pick <b>#${ds.next}</b></span>`:`<span>Draft complete</span>`):`<span>Set your slot in Settings</span>`;
+  let R=ST.slot&&ds.away>0?`<span class="away">${ds.away} pick${ds.away===1?"":"s"} away</span>`:(ST.slot&&ds.away===0&&ds.horizon?`<span class="away">then #${ds.horizon}</span>`:"");
+  let c=`<div class="status">${L}${R}</div>`;
+  if(ds.run) c+=`<div class="run">${ds.run.pos} run — ${ds.run.n} of the last ${ds.run.of} picks</div>`;
+  if(recs.length){ const t=recs[0];
+    c+=`<div class="take"><div class="big"><div class="lbl">Take now</div><div class="nm">${esc(t.r.name)}</div><div class="why">${posTag(t.r.pos)} Tier ${t.r.tier} &nbsp;·&nbsp; ${t.why}</div></div>
+        <div class="actions"><button class="me" data-n="${esc(t.r.name)}" data-a="me">Mine</button><button class="gone" data-n="${esc(t.r.name)}" data-a="gone">Gone</button></div></div>`;
+    c+=`<div class="alts">`+recs.slice(1).map(x=>`<div class="alt"><div class="n"><span class="p ${x.r.pos}">${pn(x.r.pos)}</span>${esc(x.r.name)}</div><div class="w">T${x.r.tier} · ${x.why}</div></div>`).join("")+`</div>`;
+    if(wait&&Object.keys(wait).length) c+=`<div class="wait"><div class="h">If you wait — likely still there at #${ds.horizon}</div><div class="l">${["RB","WR","TE","QB"].filter(p=>wait[p]).map(p=>`<span><span class="p ${p}">${p}</span>${esc(wait[p].name)}</span>`).join("")}</div></div>`;
+  } else c+=`<div class="empty">Board is empty.</div>`;
+  document.getElementById("clock").innerHTML=c;
+
+  const s=ST.st,h=rc.have;
+  const chip=(k,v,max)=>max>0?`<div class="slot ${v>=max?"full":(ds.round>=4?"need":"")}"><div class="k">${k}</div><div class="v">${v}/${max}</div></div>`:"";
+  document.getElementById("roster").innerHTML=chip("QB",Math.min(h.QB,s.QB),s.QB)+chip("RB",Math.min(h.RB,s.RB),s.RB)+chip("WR",rc.wrDed,s.WR)+chip("TE",rc.teDed,s.TE)+
+    chip("WR/TE",rc.wrteUsed,s.WRTE)+chip("Flex",rc.flexUsed,s.FLEX)+chip("DST",Math.min(h.DEF,s.DEF),s.DEF)+chip("K",Math.min(h.PK,s.PK),s.PK)+
+    `<div class="slot"><div class="k">Bench</div><div class="v">${rc.benchUsed}/${ST.bench}</div></div>`;
+
+  ["myteam","targets","drawer"].forEach(id=>document.getElementById(id).classList.toggle("show",ST.panel===id));
+  ["tgl_targets","tgl_team","gear"].forEach(id=>document.getElementById(id).classList.toggle("on",({tgl_targets:"targets",tgl_team:"myteam",gear:"drawer"})[id]===ST.panel));
+  const mine=rows.filter(r=>mm.get(r.name)==="me");
+  document.getElementById("myteam").innerHTML=`<h2>My team <small>${mine.length} picked</small></h2>`+(mine.length?mine.map(r=>`<div class="ln">${posTag(r.pos)}<b class="grow">${esc(r.name)}</b><span style="color:var(--ink3)">${r.team} · bye ${r.bye}${rc.byes[r.bye]>=2?` <span class="byewarn">×${rc.byes[r.bye]}</span>`:""}</span></div>`).join(""):`<div class="hint">No picks yet — tap <b>Mine</b> when you draft someone.</div>`);
+
+  const tnames=Object.keys(targets); const byRound={};
+  tnames.forEach(n=>{const rd=targets[n];(byRound[rd]=byRound[rd]||[]).push(n);});
+  const rowByName=new Map(rows.map(r=>[r.name,r]));
+  let th=`<h2>★ Targets <small>${tnames.length} saved</small></h2>`;
+  if(!tnames.length) th+=`<div class="hint">Tap the ☆ on any player to target him. He'll be filed under the round he usually goes; change it here.</div>`;
+  else Object.keys(byRound).map(Number).sort((a,b)=>a-b).forEach(rd=>{
+    const avail=byRound[rd].filter(n=>!mm.has(n)).length;
+    th+=`<div class="rhead ${rd===ds.round?"now":""}">Round ${rd} <span class="cnt">${avail} of ${byRound[rd].length} available</span></div>`;
+    byRound[rd].map(n=>rowByName.get(n)).filter(Boolean).sort((a,b)=>a.b-b.b).forEach(r=>{
+      const st=mm.get(r.name); const tag=st?`<span class="tag ${st}">${st==="me"?"Mine":"Gone"}</span>`:(danger.has(r.name)?`<span class="tag" style="background:#FFEBD2;color:#B35C00">Gone by #${ds.horizon}</span>`:`<span class="tag avail">#${r.rank}</span>`);
+      th+=`<div class="ln">${posTag(r.pos)}<span class="grow" style="${st==="gone"?"text-decoration:line-through;opacity:.55":""}"><b>${esc(r.name)}</b></span>${tag}
+        <select data-t="${esc(r.name)}">${Array.from({length:totalRounds()},(_,i)=>i+1).map(i=>`<option ${i===rd?"selected":""}>${i}</option>`).join("")}</select><button class="x" data-n="${esc(r.name)}" data-a="untarget">✕</button></div>`;
+    });
+  });
+  document.getElementById("targets").innerHTML=th;
+
+  const q=ST.Q.toLowerCase();
+  const list=rows.filter(r=>(ST.POS==="ALL"||r.pos===ST.POS)&&(!q||r.name.toLowerCase().includes(q))&&(ST.showD||!mm.has(r.name)||q));
+  const remainPT={}; rows.forEach(r=>{if(!mm.has(r.name)){const k=r.pos+"|"+r.tier;remainPT[k]=(remainPT[k]||0)+1;}});
+  let html="",lastT=null,seen=0,div=false;
+  list.forEach(r=>{
+    const st=mm.get(r.name), inDanger=!st&&danger.has(r.name), isT=!!targets[r.name];
+    if(ST.POS!=="ALL"&&!q&&r.tier!==lastT){const left=remainPT[r.pos+"|"+r.tier]||0;html+=`<div class="tierhdr"><span class="t">Tier ${r.tier}</span><span class="l"></span><span class="left ${left<=2?"low":""}">${left} left</span></div>`;lastT=r.tier;}
+    if(ST.POS==="ALL"&&!q&&!st){ if(ds.gap>0&&seen===ds.gap&&!div){html+=`<div class="divider"><span>Your pick #${ds.horizon} — players above are likely gone by then</span></div>`;div=true;} seen++; }
+    const byeW=!st&&rc.byes[r.bye]>=2&&r.pos!=="DEF"&&r.pos!=="PK"?`<span class="byewarn">Bye ${r.bye} ×${rc.byes[r.bye]+1}</span>`:`<span>${r.team} · bye ${r.bye}</span>`;
+    const risk=inDanger&&ds.horizon?`<span class="risk">Gone by #${ds.horizon}</span>`:"";
+    const act=st?`<span class="tag ${st}">${st==="me"?"Mine":"Gone"}</span><button class="undo" data-n="${esc(r.name)}" data-a="undo">Undo</button>`
+                :`<button class="me" data-n="${esc(r.name)}" data-a="me">Mine</button><button class="gone" data-n="${esc(r.name)}" data-a="gone">Gone</button>`;
+    html+=`<div class="row ${r.pos} ${st||""} ${inDanger?"danger":""} ${isT?"target":""}">
+      <button class="star ${isT?"on":""}" data-n="${esc(r.name)}" data-a="star" aria-label="Target">${isT?"★":"☆"}</button>
+      <div class="rk">${r.rank}</div>
+      <div class="info"><div class="nm">${esc(r.name)}${isT?`<span class="tr">R${targets[r.name]}</span>`:""}</div>
+        <div class="meta">${posTag(r.pos)}<span class="tier">T${r.tier}</span>${srcChips(r)}${byeW}${risk}</div></div>
+      <div class="act">${act}</div></div>`;
+  });
+  if(!list.length) html=`<div style="padding:24px 0;color:var(--ink3);text-align:center">Nothing here. ${q?"Try another name.":"Turn on Show drafted to see taken players."}</div>`;
+  document.getElementById("board").innerHTML=html;
+}
+
+/* ---------- events ---------- */
+document.body.addEventListener("click",e=>{
+  const b=e.target.closest("button[data-a]"); if(!b)return;
+  const n=b.dataset.n,a=b.dataset.a;
+  if(a==="undo") marks=marks.filter(m=>m.n!==n);
+  else if(a==="star"){ if(targets[n])delete targets[n]; else { const r=build().find(x=>x.name===n); targets[n]=Math.min(totalRounds(),Math.max(1,Math.ceil(r.b/ST.teams))); } }
+  else if(a==="untarget") delete targets[n];
+  else { marks=marks.filter(m=>m.n!==n); marks.push({n,a}); }
+  save(); render();
+});
+document.body.addEventListener("change",e=>{ const s=e.target.closest("select[data-t]"); if(!s)return; targets[s.dataset.t]=parseInt(s.value); save(); render(); });
+document.getElementById("undo").onclick=()=>{ if(marks.length){marks.pop();save();render();} };
+document.getElementById("q").oninput=e=>{ST.Q=e.target.value;render();};
+document.getElementById("tgl_drafted").onclick=e=>{ST.showD=!ST.showD;e.target.classList.toggle("on",ST.showD);render();};
+const tgl=id=>()=>{ST.panel=ST.panel===id?null:id;render();};
+document.getElementById("tgl_targets").onclick=tgl("targets"); document.getElementById("tgl_team").onclick=tgl("myteam"); document.getElementById("gear").onclick=tgl("drawer");
+document.querySelectorAll(".pf").forEach(el=>el.onclick=()=>{document.querySelectorAll(".pf").forEach(x=>x.classList.remove("on"));el.classList.add("on");ST.POS=el.dataset.p;render();});
+document.getElementById("w").oninput=e=>{ST.W=e.target.value/100;document.getElementById("wu").textContent=e.target.value+"%";document.getElementById("wr").textContent=(100-e.target.value)+"%";save();render();};
+["teams","slot","bench"].forEach(k=>document.getElementById("s_"+k).oninput=e=>{const v=parseInt(e.target.value);ST[k]=isNaN(v)?(k==="slot"?null:ST[k]):v;save();render();});
+["QB","RB","WR","TE","WRTE","FLEX","DEF","PK"].forEach(k=>document.getElementById("s_"+k).oninput=e=>{const v=parseInt(e.target.value);if(!isNaN(v))ST.st[k]=v;save();render();});
+document.getElementById("clearpicks").onclick=()=>{if(confirm("Clear every Mine/Gone pick? Targets and settings stay.")){marks=[];save();render();}};
+document.getElementById("cleartargets").onclick=()=>{if(confirm("Remove all targets?")){targets={};save();render();}};
+load().then(render);
+</script></body></html>
